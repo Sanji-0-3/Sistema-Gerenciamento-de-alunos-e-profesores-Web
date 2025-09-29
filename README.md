@@ -29,9 +29,9 @@ As credenciais de conexão estão definidas nos arquivos de configuração:
 
 | Parâmetro | Valor |
 | :--- | :--- |
-| **URL** | `jdbc:mysql://localhost/escola` |
-| **Usuário** | `root` |
-| **Senha** | `paulo3255` |
+| **URL** | `jdbc:mysql://localhost/seu banco` |
+| **Usuário** | `seu usuario` |
+| **Senha** | `sua senha` |
 
 **Nota:** As tabelas `professores` e `alunos` devem ser criadas manualmente com as colunas correspondentes aos campos dos Models (`Professor.java` e `Aluno.java`).
 
