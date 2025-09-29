@@ -21,6 +21,7 @@ Certifique-se de ter o MySQL instalado e crie um esquema (database) chamado esco
 As credenciais de conexão estão definidas nos arquivos de configuração:
 
 Parâmetro	Valor
+
 URL	jdbc:mysql://localhost/seu banco
 Usuário	seu usuario
 Senha	sua senha
