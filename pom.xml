@@ -12,6 +12,7 @@
 	<artifactId>WebEscolar</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>WebEscolar</name>
+        <packaging>war</packaging>
 	<description>project for Spring Boot</description>
 	<url/>
 	<licenses>

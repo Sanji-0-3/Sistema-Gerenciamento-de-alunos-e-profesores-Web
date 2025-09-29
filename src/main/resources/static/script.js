@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Função para ativar o modo de edição
+    // Função para ativar o modo de edição (CORREÇÃO B03 APLICADA)
     function activateEditing(tableBody, isProfessor) {
         const selectedRow = tableBody.querySelector('.selected-row');
         if (!selectedRow) {
@@ -118,21 +118,27 @@ document.addEventListener('DOMContentLoaded', () => {
         editingOriginalName = cells[0].textContent.trim(); 
 
         // Torna todas as células editáveis e adiciona um visual de edição
-        cells.forEach(cell => {
-            cell.setAttribute('contentEditable', 'true');
-            cell.style.border = '1px dashed #ffc107'; 
-            
-            // <--- CHAVE DA CORREÇÃO: Adiciona o manipulador de clique para forçar o cursor
-            cell.addEventListener('click', cellEditClickHandler);
+        cells.forEach((cell, index) => { // Adicionado 'index' para identificar a primeira coluna
+            // CORREÇÃO B03: A célula 0 (Nome/Chave) não deve ser editável.
+            if (index === 0) {
+                cell.setAttribute('contentEditable', 'false');
+                cell.style.border = '1px solid transparent'; 
+            } else {
+                cell.setAttribute('contentEditable', 'true');
+                cell.style.border = '1px dashed #ffc107'; 
+                
+                // <--- CHAVE DA CORREÇÃO: Adiciona o manipulador de clique para forçar o cursor
+                cell.addEventListener('click', cellEditClickHandler);
+            }
         });
 
         alert('Modo de edição ativado. Pressione "Atualizar" para salvar as alterações.');
         
-        // Foca na primeira célula E coloca o cursor no final do conteúdo
-        setCursorAtEnd(cells[0]); 
+        // Foca na primeira célula editável (índice 1) e coloca o cursor no final do conteúdo
+        setCursorAtEnd(cells[1] || cells[0]); 
     }
 
-    // --- LÓGICA DE SALVAMENTO (PUT) ---
+    // --- LÓGICA DE SALVAMENTO (PUT) (CORREÇÕES B02 e B03 APLICADAS) ---
     async function handleUpdate(tableBody, isProfessor) {
         const selectedRow = tableBody.querySelector('.selected-row');
         
@@ -142,19 +148,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const cells = selectedRow.querySelectorAll('td');
-        const nomeEditado = cells[0].textContent.trim();
+        const nomeChave = editingOriginalName; // CORREÇÃO B03: Usar o nome original (chave)
         
-        if (!nomeEditado) {
-            alert('O campo Nome não pode ser vazio!');
-            return;
-        }
-
         let updatedData = {};
         let apiUrl = '';
 
         if (isProfessor) {
             updatedData = {
-                nome: editingOriginalName, 
+                // CORREÇÃO B03: Nome original usado para a cláusula WHERE do Service
+                nome: nomeChave, 
                 telefone: cells[1].textContent.trim(),
                 cpf: cells[2].textContent.trim(),
                 endereco: cells[3].textContent.trim(),
@@ -165,7 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
             apiUrl = `${API_BASE_URL}/professores/atualizar`;
         } else {
             updatedData = {
-                nome: editingOriginalName, 
+                // CORREÇÃO B03: Nome original usado para a cláusula WHERE do Service
+                nome: nomeChave, 
                 nascimento: cells[1].textContent.trim(),
                 turma: cells[2].textContent.trim(),
                 email: cells[3].textContent.trim()
@@ -173,12 +176,11 @@ document.addEventListener('DOMContentLoaded', () => {
             apiUrl = `${API_BASE_URL}/alunos/atualizar`;
         }
         
-        // O nome que será efetivamente salvo no DB (pode ser diferente de editingOriginalName)
-        updatedData.nome = nomeEditado; 
+        // A linha anterior 'updatedData.nome = nomeEditado;' foi removida (Correção B03).
 
         try {
             const message = await sendData(apiUrl, 'PUT', updatedData);
-            alert("Atualização salva com sucesso!");
+            alert("Alterações salvas com sucesso!"); // CORREÇÃO B02: Mensagem corrigida
             
             disableEditing(tableBody);
             if (isProfessor) await carregarProfessores();
@@ -321,6 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnExcluirProfessor = document.getElementById('btnExcluirProfessor');
     const btnEditarProfessor = document.getElementById('btnEditarProfessor');
     const btnSalvarProfessor = document.getElementById('btnSalvarProfessor');
+    // Adicionando variáveis do formulário de Professor (necessário para o B01)
+    const cadastroProfessorFormContainer = document.getElementById('cadastroProfessorFormContainer'); 
+    const cadastroProfessorForm = document.getElementById('cadastroProfessorForm'); 
 
     async function carregarProfessores() {
         if (!professoresTableBody) return; 
@@ -348,9 +353,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (btnCadastrarProfessor) {
         btnCadastrarProfessor.addEventListener('click', () => {
-            cadastroProfessorFormContainer.style.display = 'block';
+            // Presume que o ID do container do formulário de professor seja 'cadastroProfessorFormContainer'
+            if(cadastroProfessorFormContainer) cadastroProfessorFormContainer.style.display = 'block'; 
             btnCadastrarProfessor.style.display = 'none';
-            cadastroProfessorForm.reset();
+            if(cadastroProfessorForm) cadastroProfessorForm.reset();
             disableEditing(professoresTableBody);
         });
     }
@@ -370,6 +376,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    // Submissão do Formulário de Cadastro de Professor (POST) - CORREÇÃO B01: Adicionado o bloco
+    if (cadastroProfessorForm) {
+        cadastroProfessorForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            // Presume que os IDs dos campos do formulário de professor sejam: 
+            // nomeProfessor, telefoneProfessor, cpfProfessor, enderecoProfessor, nascimentoProfessor, emailProfessor, disciplinaProfessor
+            const professorData = {
+                nome: document.getElementById('nomeProfessor').value, 
+                telefone: document.getElementById('telefoneProfessor').value, 
+                cpf: document.getElementById('cpfProfessor').value,
+                endereco: document.getElementById('enderecoProfessor').value,
+                nascimento: document.getElementById('nascimentoProfessor').value, // DD/MM/AAAA
+                email: document.getElementById('emailProfessor').value,
+                disciplina: document.getElementById('disciplinaProfessor').value
+            };
+            
+            // Validação de campos vazios (Requisito CT07)
+            if (Object.values(professorData).some(val => val.trim() === '')) {
+                alert('Todos os campos devem ser preenchidos!'); return;
+            }
+            
+            try {
+                const message = await sendData(`${API_BASE_URL}/professores/cadastrar`, 'POST', professorData);
+                alert(message); // Esperado: "Professor cadastrado com sucesso!" (Requisito CT06)
+                if(cadastroProfessorFormContainer) cadastroProfessorFormContainer.style.display = 'none';
+                btnCadastrarProfessor.style.display = 'block';
+                await carregarProfessores(); // Atualiza a lista (Requisito CT06)
+            } catch (error) { console.error(error); }
+        });
+    }
+
 
     // --- INICIALIZAÇÃO ---
     if (alunosTableBody) carregarAlunos();
